@@ -42,7 +42,6 @@
 
     <div class="bg-white p-6 rounded-2xl shadow-lg w-full max-w-xl text-center">
       <p class="text-xl mb-2">Heute haben wir <span id="dailyTotal" class="font-bold">0</span> Kippen geraucht!</p>
-      <p class="text-xl">Insgesamt haben wir <span id="total" class="font-bold">0</span> Kippen geschafft!</p>
     </div>
 
     <div id="king" class="bg-yellow-50 p-6 rounded-2xl shadow-xl w-full max-w-xl mx-auto mt-8 flex items-center justify-center text-xl font-semibold tracking-wide text-yellow-700">
@@ -50,19 +49,24 @@
       <span id="king-text">Noch kein/e Kippen-König*in heute 😢</span>
     </div>
     
-    <div id="users" class="mt-8 grid gap-4 w-full max-w-xl">
+    <div id="users" class="mt-8 grid gap-4 w-full max-w-xl"></div>
+	
+	<button onclick="location.href='statistik.html'" 
+			class="mt-8 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow">
+	  Statistik ansehen
+	</button>
 
+  
   <script>
-    const users = ['Frieder', 'Gesine', 'Fredi', 'Lea', 'Emma'];
+  const users = ['Frieder', 'Gesine', 'Fredi', 'Lea', 'Emma'];
 
-    function render() {
-      fetch('/status')
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById('dailyTotal').textContent = data.dailyTotal;
-          document.getElementById('total').textContent = data.total;
-
-          // Kippen-König*in finden
+  function render() {
+    fetch('/status')
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('dailyTotal').textContent = data.dailyTotal;
+		
+		 // Kippen-König*in finden
           let king = '';
           let max = 0;
           for (const user of users) {
@@ -80,50 +84,47 @@
             kingText.textContent = 'Noch kein/e Kippen-König*in heute 😢';
           }
 
+        const usersDiv = document.getElementById('users');
+        usersDiv.innerHTML = '';
+        users.forEach(user => {
+          const userData = data.users[user];
+          const div = document.createElement('div');
+          div.className = 'bg-white rounded-xl shadow-md p-4 flex justify-between items-center relative';
 
-          const usersDiv = document.getElementById('users');
-          usersDiv.innerHTML = '';
-          users.forEach(user => {
-            const userData = data.users[user];
-            const div = document.createElement('div');
-            div.className = 'bg-white rounded-xl shadow-md p-4 flex justify-between items-center relative';
-
-            div.innerHTML = `
-              <div>
-                <h2 class="text-lg font-semibold">${user}</h2>
-                <p>Heute: <span>${userData.daily}</span> – Gesamt: <span>${userData.total}</span></p>
-              </div>
-              <button onclick="clickUser('${user}', this)" class="relative z-10 bg-gradient-to-r from-pink-500 to-yellow-500 hover:from-pink-600 hover:to-yellow-600 text-white px-4 py-2 rounded-full shadow transition-all duration-300">+1</button>
-            `;
-            usersDiv.appendChild(div);
-          });
+          div.innerHTML = `
+            <div>
+              <h2 class="text-lg font-semibold">${user}</h2>
+              <p>Heute: <span>${userData.daily}</span></p>
+            </div>
+            <button onclick="clickUser('${user}', this)" class="relative z-10 bg-gradient-to-r from-pink-500 to-yellow-500 hover:from-pink-600 hover:to-yellow-600 text-white px-4 py-2 rounded-full shadow transition-all duration-300">+1</button>
+          `;
+          usersDiv.appendChild(div);
         });
-    }
+      });
+  }
 
-    
-    function clickUser(user, btn) {
-      showPuff(btn);
-      fetch('/click/' + user, { method: 'POST' }).then(() => render());
-    }
+  function clickUser(user, btn) {
+    showPuff(btn);
+    fetch('/click/' + user, { method: 'POST' }).then(() => render());
+  }
 
-    function showPuff(button) {
-      const puff = document.createElement('div');
-      puff.className = 'puff';
-      puff.textContent = '💨';
+  function showPuff(button) {
+    const puff = document.createElement('div');
+    puff.className = 'puff';
+    puff.textContent = '💨';
+    const offsetX = button.offsetWidth / 2;
+    const offsetY = -20;
 
-      const rect = button.getBoundingClientRect();
-      const offsetX = button.offsetWidth / 2;
-      const offsetY = -20;
+    puff.style.left = `${button.offsetLeft + offsetX}px`;
+    puff.style.top = `${button.offsetTop + offsetY}px`;
 
+    button.parentElement.appendChild(puff);
+    setTimeout(() => puff.remove(), 800);
+  }
 
-      puff.style.left = `${button.offsetLeft + offsetX}px`;
-      puff.style.top = `${button.offsetTop + offsetY}px`;
-
-      button.parentElement.appendChild(puff);
-      setTimeout(() => puff.remove(), 800);
-    }
-
-    render();
-  </script>
+  render();
+</script>
+  
+  
 </body>
 </html>
