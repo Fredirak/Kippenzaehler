@@ -60,9 +60,9 @@
       <p class="text-xl">Insgesamt haben wir <span id="total" class="font-bold">0</span> Kippen geschafft!</p>
     </div>
 
-    <div id="king">
+    <div id="king" class="bg-white rounded-2xl shadow-lg px-6 py-3 max-w-xl mx-auto mt-8 mb-6 flex items-center justify-center text-xl font-semibold tracking-wide text-yellow-600">
       <span class="mr-3 animate-pulse">👑</span>
-      <span id="king-text"></span>
+      <span id="king-text">Noch kein Kippen-König*in heute</span>
     </div>
     
     <div id="users" class="mt-8 grid gap-4 w-full max-w-xl"></div>https://github.com/Fredirak/Kippenzaehler/edit/main/public/index.html#L63C19-L63C174
@@ -89,11 +89,11 @@
           }
     
           // Kippen-König*in anzeigen
-          const kingDiv = document.getElementById('king');
+          const kingText = document.getElementById('king-text');
           if (max > 0) {
-            kingDiv.textContent = `Kippen-König*in des Tages: ${king} (${max} Kippen)`;
+            kingText.textContent = `Kippen-König*in des Tages: ${king} (${max} Kippen)`;
           } else {
-            kingDiv.textContent = 'Noch kein Kippen-König*in heute';
+            kingText.textContent = 'Noch kein Kippen-König*in heute';
           }
 
 
