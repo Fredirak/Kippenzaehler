@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Click Counter</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 20px; }
+  button { margin-left: 10px; }
+  .user { margin-bottom: 10px; }
+</style>
+</head>
+<body>
+  <h1>Kippen-Zähler</h1>
+  <div>
+    <strong>Alle zusammen haben heute </strong><span id="dailyTotal">0</span><strong> geraucht!</strong><br />
+    <strong>Insgesamt haben wir schon </strong><span id="total">0</span><strong> geschafft!</strong>
+  </div>
+  <hr />
+  <div id="users"></div>
+
+<script>
+  const users = ['Frieder', 'Gesine', 'Fredi'];
+
+  function render() {
+    fetch('/status')
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('dailyTotal').textContent = data.dailyTotal;
+        document.getElementById('total').textContent = data.total;
+
+        const usersDiv = document.getElementById('users');
+        usersDiv.innerHTML = '';
+        users.forEach(user => {
+          const userData = data.users[user];
+          const div = document.createElement('div');
+          div.className = 'user';
+          div.innerHTML = `
+            <strong>${user}</strong> - Heute: ${userData.daily} - Gesamt: ${userData.total}
+            <button onclick="clickUser('${user}')">+1</button>
+          `;
+          usersDiv.appendChild(div);
+        });
+      });
+  }
+
+  function clickUser(user) {
+    fetch('/click/' + user, { method: 'POST' })
+      .then(() => render());
+  }
+
+  render();
+</script>
+</body>
+</html>
