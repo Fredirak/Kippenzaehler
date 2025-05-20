@@ -23,6 +23,36 @@
         transform: translateY(-100px) scale(3);
       }
     }
+
+    #king {
+      font-family: 'Georgia', serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #bfa14a; /* edles Gold */
+      text-shadow: 0 0 8px rgba(191, 161, 74, 0.7), 0 0 20px rgba(191, 161, 74, 0.5);
+      letter-spacing: 2px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Optional: kleine Krone als Emoji oder SVG davor */
+    #king::before {
+      content: "👑";
+      margin-right: 10px;
+      font-size: 2.2rem;
+      animation: crown-glow 2.5s infinite alternate ease-in-out;
+    }
+    
+    @keyframes crown-glow {
+      from {
+        filter: drop-shadow(0 0 2px #fdd835);
+      }
+      to {
+        filter: drop-shadow(0 0 8px #fdd835);
+      }
+    }
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans">
