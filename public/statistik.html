@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kippen-Counter Statistik</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+  <div class="min-h-screen flex flex-col items-center justify-center p-6">
+    <h1 class="text-4xl font-bold mb-6">📊 Kippen-Counter Statistik</h1>
+
+    <div class="bg-white p-6 rounded-2xl shadow-lg w-full max-w-xl text-center mb-6">
+      <p class="text-xl mb-2">Insgesamt haben wir <span id="totalAll" class="font-bold">0</span> Kippen geraucht!</p>
+    </div>
+
+    <div id="usersStats" class="grid gap-4 w-full max-w-xl">
+      <!-- Gesamtstatistik pro User kommt hier hin -->
+    </div>
+
+    <button onclick="location.href='index.html'" 
+            class="mt-8 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow">
+      Zurück zur Hauptseite
+    </button>
+  </div>
+
+  <script>
+    const users = ['Frieder', 'Gesine', 'Fredi', 'Lea', 'Emma'];
+
+    function renderStats() {
+      fetch('/status')
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('totalAll').textContent = data.total;
+
+          const usersStats = document.getElementById('usersStats');
+          usersStats.innerHTML = '';
+
+          users.forEach(user => {
+            const userData = data.users[user];
+            const div = document.createElement('div');
+            div.className = 'bg-white rounded-xl shadow-md p-4 flex justify-between items-center';
+
+            div.innerHTML = `
+              <div>
+                <h2 class="text-lg font-semibold">${user}</h2>
+                <p>Gesamt: <span>${userData.total}</span></p>
+              </div>
+            `;
+            usersStats.appendChild(div);
+          });
+        });
+    }
+
+    renderStats();
+  </script>
+</body>
+</html>
