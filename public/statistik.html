@@ -3,23 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kippen-Counter Statistik</title>
+  <title>Statistik</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans">
-  <div class="min-h-screen flex flex-col items-center justify-center p-6">
-    <h1 class="text-4xl font-bold mb-6">📊 Kippen-Counter Statistik</h1>
+<body class="bg-gray-100 text-gray-800 font-sans p-6">
+  <h1 class="text-3xl font-bold mb-6 text-center">📊 Kippen-Statistik</h1>
 
-    <div class="bg-white p-6 rounded-2xl shadow-lg w-full max-w-xl text-center mb-6">
-      <p class="text-xl mb-2">Insgesamt haben wir <span id="totalAll" class="font-bold">0</span> Kippen geraucht!</p>
-    </div>
+  <div id="charts" class="space-y-12 max-w-4xl mx-auto"></div>
 
-    <div id="usersStats" class="grid gap-4 w-full max-w-xl">
-      <!-- Gesamtstatistik pro User kommt hier hin -->
-    </div>
-
-    <button onclick="location.href='index.html'" 
-            class="mt-8 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow">
+  <div class="text-center mt-10">
+    <button onclick="location.href='index.html'"
+      class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow">
       Zurück zur Hauptseite
     </button>
   </div>
@@ -27,32 +22,135 @@
   <script>
     const users = ['Frieder', 'Gesine', 'Fredi', 'Lea', 'Emma'];
 
-    function renderStats() {
-      fetch('/status')
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById('totalAll').textContent = data.total;
+    // Heute im ISO-Format YYYY-MM-DD
+    const today = new Date().toISOString().split('T')[0];
 
-          const usersStats = document.getElementById('usersStats');
-          usersStats.innerHTML = '';
+    fetch('/status?nocache=' + new Date().getTime())  // Cache-Busting
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('charts');
 
-          users.forEach(user => {
-            const userData = data.users[user];
-            const div = document.createElement('div');
-            div.className = 'bg-white rounded-xl shadow-md p-4 flex justify-between items-center';
+        // Gesamtentwicklung vorbereiten
+        const dateMap = {}; // { date: totalKippen }
 
-            div.innerHTML = `
-              <div>
-                <h2 class="text-lg font-semibold">${user}</h2>
-                <p>Gesamt: <span>${userData.total}</span></p>
-              </div>
-            `;
-            usersStats.appendChild(div);
+        users.forEach(user => {
+          const history = data.history[user] || {};
+
+          // Alte Daten sammeln
+          for (const [date, value] of Object.entries(history)) {
+            if (!dateMap[date]) dateMap[date] = 0;
+            dateMap[date] += value;
+          }
+
+          // Heute ergänzen, falls nicht schon in history enthalten
+          if (!history.hasOwnProperty(today)) {
+            const todayVal = data.users[user]?.dailyData?.[today] ?? data.users[user]?.daily ?? 0;
+            if (typeof todayVal === 'number') {
+              if (!dateMap[today]) dateMap[today] = 0;
+              dateMap[today] += todayVal;
+            }
+          }
+        });
+
+        // Sortiere die Daten chronologisch
+        const allDates = Object.keys(dateMap).sort();
+        const allValues = allDates.map(date => dateMap[date]);
+        const totalOverall = allValues.reduce((a, b) => a + b, 0);
+
+        // 📊 Alle zusammen
+        const globalCanvas = document.createElement('canvas');
+        const globalSection = document.createElement('div');
+        globalSection.className = 'bg-white p-6 rounded-xl shadow mb-12';
+        globalSection.innerHTML = `
+          <h2 class="text-2xl font-bold mb-2">Alle zusammen</h2>
+          <p class="mb-4 text-gray-600">Gesamt: <span class="font-bold">${totalOverall}</span> Kippen</p>
+        `;
+        globalSection.appendChild(globalCanvas);
+        container.appendChild(globalSection);
+
+        new Chart(globalCanvas, {
+          type: 'line',
+          data: {
+            labels: allDates,
+            datasets: [{
+              label: 'Kippen pro Tag (gesamt)',
+              data: allValues,
+              borderColor: 'rgba(59, 130, 246, 1)',
+              backgroundColor: 'rgba(59, 130, 246, 0.2)',
+              tension: 0.2,
+              fill: true,
+              pointRadius: 4,
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { stepSize: 1 }
+              }
+            }
+          }
+        });
+
+        // 🔁 Einzelne User:innen
+        users.forEach(user => {
+          const history = data.history[user] || {};
+
+          const combinedHistory = { ...history };
+
+          // Heute ergänzen, falls nicht schon in history enthalten
+          if (!combinedHistory.hasOwnProperty(today)) {
+            const todayVal = data.users[user]?.dailyData?.[today] ?? data.users[user]?.daily ?? 0;
+            if (typeof todayVal === 'number') {
+              combinedHistory[today] = todayVal;
+            }
+          }
+
+          const dates = Object.keys(combinedHistory).sort();
+          const values = dates.map(date => combinedHistory[date]);
+
+          const totalUser = values.reduce((a, b) => a + b, 0);
+
+          const canvas = document.createElement('canvas');
+          const section = document.createElement('div');
+          section.className = 'bg-white p-6 rounded-xl shadow';
+          section.innerHTML = `
+            <h2 class="text-xl font-semibold mb-2">${user}</h2>
+            <p class="mb-4 text-gray-600">Gesamt: <span class="font-bold">${totalUser}</span> Kippen</p>
+          `;
+          section.appendChild(canvas);
+          container.appendChild(section);
+
+          new Chart(canvas, {
+            type: 'line',
+            data: {
+              labels: dates,
+              datasets: [{
+                label: 'Kippen pro Tag',
+                data: values,
+                borderColor: 'rgba(255, 99, 132, 1)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                tension: 0.2,
+                fill: true,
+                pointRadius: 4,
+              }]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: { stepSize: 1 }
+                }
+              }
+            }
           });
         });
-    }
-
-    renderStats();
+      })
+      .catch(err => {
+        console.error('Fehler beim Laden der Daten:', err);
+      });
   </script>
 </body>
 </html>
