@@ -3,30 +3,62 @@
     "Frieder": {
       "total": 1,
       "daily": 1,
-      "lastUpdated": "2025-05-20"
+      "lastUpdated": "2025-05-20",
+      "dailyData": {
+        "2025-05-21": 0
+      }
     },
     "Gesine": {
-      "total": 4,
-      "daily": 4,
-      "lastUpdated": "2025-05-20"
+      "total": 6,
+      "daily": 6,
+      "lastUpdated": "2025-05-20",
+      "dailyData": {
+        "2025-05-21": 0
+      }
     },
     "Fredi": {
-      "total": 4,
-      "daily": 4,
-      "lastUpdated": "2025-05-20"
+      "total": 6,
+      "daily": 6,
+      "lastUpdated": "2025-05-20",
+      "dailyData": {
+        "2025-05-21": 0
+      }
     },
     "Lea": {
-      "total": 3,
-      "daily": 3,
-      "lastUpdated": "2025-05-20"
-    },
-    "Emma": {
       "total": 4,
       "daily": 4,
-      "lastUpdated": "2025-05-20"
+      "lastUpdated": "2025-05-20",
+      "dailyData": {
+        "2025-05-21": 0
+      }
+    },
+    "Emma": {
+      "total": 6,
+      "daily": 6,
+      "lastUpdated": "2025-05-20",
+      "dailyData": {
+        "2025-05-21": 0
+      }
     }
   },
-  "dailyTotal": 16,
-  "total": 16,
-  "date": "2025-05-20"
+  "dailyTotal": 23,
+  "total": 23,
+  "date": "2025-05-20",
+  "history": {
+    "Frieder": {
+
+    },
+    "Gesine": {
+
+    },
+    "Fredi": {
+
+    },
+    "Lea": {
+
+    },
+    "Emma": {
+
+    }
+  }
 }
