@@ -1,46 +1,40 @@
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const dataPath = path.join(__dirname, 'data.json'); 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server läuft auf Port ${PORT}`);
-});
 
-app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
-const DATA_FILE = path.resolve('./data.json');
 
-let data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+// Daten laden
+let data = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
 
-// Hilfsfunktion für Datum "YYYY-MM-DD"
-function getToday() {
-  return new Date().toISOString().slice(0, 10);
+// Speichern
+function saveData() {
+  fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
 }
 
-// Reset täglich
+// Täglicher Reset
 function resetDailyIfNeeded() {
-  const today = getToday();
+  const today = new Date().toISOString().split('T')[0];
   if (data.date !== today) {
-    data.date = today;
-    data.dailyTotal = 0;
-    for (const user of Object.values(data.users)) {
-      user.daily = 0;
-      user.lastUpdated = today;
+    for (const user in data.users) {
+      data.users[user].daily = 0;
+      data.users[user].lastUpdated = today;
     }
+    data.dailyTotal = 0;
+    data.date = today;
     saveData();
   }
 }
-
-// Daten speichern
-function saveData() {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-}
-
-// Beim Serverstart prüfen, ob Tagesdaten resetten
-resetDailyIfNeeded();
 
 // GET Status
 app.get('/status', (req, res) => {
@@ -63,18 +57,39 @@ app.post('/click/:user', (req, res) => {
   res.json(data);
 });
 
+// POST: Hard-Reset (Alles auf 0)
 app.post('/reset', (req, res) => {
-  const data = {
-    Frieder: { dailyCount: 0, totalCount: 0 },
-    Gesine: { dailyCount: 0, totalCount: 0 },
-    Fredi: { dailyCount: 0, totalCount: 0 },
-    Lea: { dailyCount: 0, totalCount: 0 },
-    Emma: { dailyCount: 0, totalCount: 0 }
+  const today = new Date().toISOString().split('T')[0];
+  data = {
+    users: {
+      Frieder: { total: 0, daily: 0, lastUpdated: today },
+      Gesine: { total: 0, daily: 0, lastUpdated: today },
+      Fredi: { total: 0, daily: 0, lastUpdated: today },
+      Lea: { total: 0, daily: 0, lastUpdated: today },
+      Emma: { total: 0, daily: 0, lastUpdated: today }
+    },
+    dailyTotal: 0,
+    total: 0,
+    date: today
   };
-  fs.writeFileSync('./data.json', JSON.stringify(data, null, 2));
-  res.send('Alle Counter wurden zurückgesetzt!');
+  saveData();
+  res.send('Alle Daten wurden zurückgesetzt.');
 });
 
+// POST: Nur Daily-Reset
+app.post('/reset-daily', (req, res) => {
+  const today = new Date().toISOString().split('T')[0];
+  for (const user in data.users) {
+    data.users[user].daily = 0;
+    data.users[user].lastUpdated = today;
+  }
+  data.dailyTotal = 0;
+  data.date = today;
+  saveData();
+  res.send('Täglicher Zähler wurde zurückgesetzt.');
+});
+
+// Server starten
 app.listen(PORT, () => {
   console.log(`Server läuft auf http://localhost:${PORT}`);
 });
