@@ -1,22 +1,22 @@
 {
   "users": {
     "Frieder": {
-      "total": 25,
-      "daily": 19,
+      "total": 0,
+      "daily": 0,
       "lastUpdated": "2025-05-20"
     },
     "Gesine": {
-      "total": 6,
+      "total": 0,
       "daily": 0,
       "lastUpdated": "2025-05-20"
     },
     "Fredi": {
-      "total": 15,
-      "daily": 7,
+      "total": 0,
+      "daily": 0,
       "lastUpdated": "2025-05-20"
     }
   },
-  "dailyTotal": 26,
-  "total": 46,
+  "dailyTotal": 0,
+  "total": 0,
   "date": "2025-05-20"
 }
