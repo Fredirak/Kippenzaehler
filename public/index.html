@@ -1,55 +1,93 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Click Counter</title>
-<style>
-  body { font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 20px; }
-  button { margin-left: 10px; }
-  .user { margin-bottom: 10px; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kippen-Zähler</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .puff {
+      pointer-events: none;
+      animation: rise 0.8s ease-out forwards;
+      position: absolute;
+      font-size: 1.5rem;
+    }
+
+    @keyframes rise {
+      0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-40px) scale(1.4);
+      }
+    }
+  </style>
 </head>
-<body>
-  <h1>Kippen-Zähler</h1>
-  <div>
-    <strong>Alle zusammen haben heute </strong><span id="dailyTotal">0</span><strong> geraucht!</strong><br />
-    <strong>Insgesamt haben wir schon </strong><span id="total">0</span><strong> geschafft!</strong>
+<body class="bg-gray-100 text-gray-800 font-sans">
+  <div class="min-h-screen flex flex-col items-center justify-center p-6">
+    <h1 class="text-4xl font-bold mb-6">🚬 Kippen-Zähler</h1>
+
+    <div class="bg-white p-6 rounded-2xl shadow-lg w-full max-w-xl text-center">
+      <p class="text-xl mb-2">Alle zusammen haben heute <span id="dailyTotal" class="font-bold">0</span> geraucht!</p>
+      <p class="text-xl">Insgesamt haben wir schon <span id="total" class="font-bold">0</span> geschafft!</p>
+    </div>
+
+    <div id="users" class="mt-8 grid gap-4 w-full max-w-xl"></div>
   </div>
-  <hr />
-  <div id="users"></div>
 
-<script>
-  const users = ['Frieder', 'Gesine', 'Fredi'];
+  <script>
+    const users = ['Frieder', 'Gesine', 'Fredi'];
 
-  function render() {
-    fetch('/status')
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById('dailyTotal').textContent = data.dailyTotal;
-        document.getElementById('total').textContent = data.total;
+    function render() {
+      fetch('/status')
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('dailyTotal').textContent = data.dailyTotal;
+          document.getElementById('total').textContent = data.total;
 
-        const usersDiv = document.getElementById('users');
-        usersDiv.innerHTML = '';
-        users.forEach(user => {
-          const userData = data.users[user];
-          const div = document.createElement('div');
-          div.className = 'user';
-          div.innerHTML = `
-            <strong>${user}</strong> - Heute: ${userData.daily} - Gesamt: ${userData.total}
-            <button onclick="clickUser('${user}')">+1</button>
-          `;
-          usersDiv.appendChild(div);
+          const usersDiv = document.getElementById('users');
+          usersDiv.innerHTML = '';
+          users.forEach(user => {
+            const userData = data.users[user];
+            const div = document.createElement('div');
+            div.className = 'bg-white rounded-xl shadow-md p-4 flex justify-between items-center relative';
+
+            div.innerHTML = `
+              <div>
+                <h2 class="text-lg font-semibold">${user}</h2>
+                <p>Heute: <span>${userData.daily}</span> – Gesamt: <span>${userData.total}</span></p>
+              </div>
+              <button onclick="clickUser('${user}', this)" class="relative z-10 bg-gradient-to-r from-pink-500 to-yellow-500 hover:from-pink-600 hover:to-yellow-600 text-white px-4 py-2 rounded-full shadow transition-all duration-300">+1</button>
+            `;
+            usersDiv.appendChild(div);
+          });
         });
-      });
-  }
+    }
 
-  function clickUser(user) {
-    fetch('/click/' + user, { method: 'POST' })
-      .then(() => render());
-  }
+    function clickUser(user, btn) {
+      showPuff(btn);
+      fetch('/click/' + user, { method: 'POST' }).then(() => render());
+    }
 
-  render();
-</script>
+    function showPuff(button) {
+      const puff = document.createElement('div');
+      puff.className = 'puff';
+      puff.textContent = '💨';
+
+      const rect = button.getBoundingClientRect();
+      const offsetX = button.offsetWidth / 2;
+      const offsetY = -20;
+
+      puff.style.left = `${button.offsetLeft + offsetX}px`;
+      puff.style.top = `${button.offsetTop + offsetY}px`;
+
+      button.parentElement.appendChild(puff);
+      setTimeout(() => puff.remove(), 800);
+    }
+
+    render();
+  </script>
 </body>
 </html>
