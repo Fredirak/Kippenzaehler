@@ -68,7 +68,8 @@ app.post('/reset', (req, res) => {
     Frieder: { dailyCount: 0, totalCount: 0 },
     Gesine: { dailyCount: 0, totalCount: 0 },
     Fredi: { dailyCount: 0, totalCount: 0 },
-    Lea: { dailyCount: 0, totalCount: 0 }
+    Lea: { dailyCount: 0, totalCount: 0 },
+    Emma: { dailyCount: 0, totalCount: 0 }
   };
   fs.writeFileSync('./data.json', JSON.stringify(data, null, 2));
   res.send('Alle Counter wurden zurückgesetzt!');
