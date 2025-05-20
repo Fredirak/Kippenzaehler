@@ -1,55 +1,75 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Click Counter</title>
-<style>
-  body { font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 20px; }
-  button { margin-left: 10px; }
-  .user { margin-bottom: 10px; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kippenzähler</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
 </head>
-<body>
-  <h1>Kippen-Zähler</h1>
-  <div>
-    <strong>Alle zusammen haben heute </strong><span id="dailyTotal">0</span><strong> Kippen geraucht!</strong><br />
-    <strong>Insgesamt haben wir schon </strong><span id="total">0</span><strong> Kippen geschafft!</strong>
+<body class="bg-gray-100 font-sans text-gray-800">
+  <div class="min-h-screen flex flex-col items-center justify-center p-4">
+    <h1 class="text-4xl font-bold mb-6">🚬 Kippenzähler</h1>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-3xl">
+      <!-- Einzelpersonen-Counter -->
+      <div class="bg-white p-4 rounded-2xl shadow-md flex flex-col items-center">
+        <h2 class="text-xl font-semibold mb-2">Frieder</h2>
+        <button onclick="increment('Frieder')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full transition">+1</button>
+        <p class="mt-2">Heute: <span id="Frieder-daily">0</span></p>
+        <p>Insgesamt: <span id="Frieder-total">0</span></p>
+      </div>
+
+      <div class="bg-white p-4 rounded-2xl shadow-md flex flex-col items-center">
+        <h2 class="text-xl font-semibold mb-2">Gesine</h2>
+        <button onclick="increment('Gesine')" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full transition">+1</button>
+        <p class="mt-2">Heute: <span id="Gesine-daily">0</span></p>
+        <p>Insgesamt: <span id="Gesine-total">0</span></p>
+      </div>
+
+      <div class="bg-white p-4 rounded-2xl shadow-md flex flex-col items-center">
+        <h2 class="text-xl font-semibold mb-2">Fredi</h2>
+        <button onclick="increment('Fredi')" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-full transition">+1</button>
+        <p class="mt-2">Heute: <span id="Fredi-daily">0</span></p>
+        <p>Insgesamt: <span id="Fredi-total">0</span></p>
+      </div>
+    </div>
+
+    <div class="mt-8 text-center">
+      <h2 class="text-2xl font-bold">📊 Gesamtstatistik</h2>
+      <p class="mt-2">Heute: <span id="total-daily">0</span></p>
+      <p>Insgesamt: <span id="total-total">0</span></p>
+    </div>
   </div>
-  <hr />
-  <div id="users"></div>
 
-<script>
-  const users = ['Frieder', 'Gesine', 'Fredi'];
+  <script>
+    async function loadCounts() {
+      const res = await fetch('/data');
+      const data = await res.json();
 
-  function render() {
-    fetch('/status')
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById('dailyTotal').textContent = data.dailyTotal;
-        document.getElementById('total').textContent = data.total;
+      let dailySum = 0;
+      let totalSum = 0;
 
-        const usersDiv = document.getElementById('users');
-        usersDiv.innerHTML = '';
-        users.forEach(user => {
-          const userData = data.users[user];
-          const div = document.createElement('div');
-          div.className = 'user';
-          div.innerHTML = `
-            <strong>${user}</strong> - Heute: ${userData.daily} - Gesamt: ${userData.total}
-            <button onclick="clickUser('${user}')">+1</button>
-          `;
-          usersDiv.appendChild(div);
-        });
+      for (const name of ['Frieder', 'Gesine', 'Fredi']) {
+        document.getElementById(`${name}-daily`).textContent = data[name].dailyCount;
+        document.getElementById(`${name}-total`).textContent = data[name].totalCount;
+        dailySum += data[name].dailyCount;
+        totalSum += data[name].totalCount;
+      }
+
+      document.getElementById('total-daily').textContent = dailySum;
+      document.getElementById('total-total').textContent = totalSum;
+    }
+
+    async function increment(name) {
+      await fetch('/click', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name })
       });
-  }
+      loadCounts();
+    }
 
-  function clickUser(user) {
-    fetch('/click/' + user, { method: 'POST' })
-      .then(() => render());
-  }
-
-  render();
-</script>
+    loadCounts();
+  </script>
 </body>
 </html>
