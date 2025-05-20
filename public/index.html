@@ -42,46 +42,33 @@
   <script>
     const users = ['Frieder', 'Gesine', 'Fredi', 'Lea'];
 
-function render() {
-  fetch('/status')
-    .then(res => res.json())
-    .then(data => {
-      document.getElementById('dailyTotal').textContent = data.dailyTotal;
-      document.getElementById('total').textContent = data.total;
+    function render() {
+      fetch('/status')
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('dailyTotal').textContent = data.dailyTotal;
+          document.getElementById('total').textContent = data.total;
 
-      // Kippen-König bestimmen
-      let kingName = '';
-      let maxDaily = -1;
-      for (const user of users) {
-        if (data.users[user].daily > maxDaily) {
-          maxDaily = data.users[user].daily;
-          kingName = user;
-        }
-      }
+          const usersDiv = document.getElementById('users');
+          usersDiv.innerHTML = '';
+          users.forEach(user => {
+            const userData = data.users[user];
+            const div = document.createElement('div');
+            div.className = 'bg-white rounded-xl shadow-md p-4 flex justify-between items-center relative';
 
-      // Kippen-König anzeigen (nur wenn jemand >0 hat)
-      const kingDiv = document.getElementById('king');
-      if (maxDaily > 0) {
-        kingDiv.textContent = `👑 Kippen-König des Tages: ${kingName} mit ${maxDaily} Kippen!`;
-      } else {
-        kingDiv.textContent = 'Noch kein Kippen-König heute – mach den ersten Zug! 🚬🔥';
-      }
+            div.innerHTML = `
+              <div>
+                <h2 class="text-lg font-semibold">${user}</h2>
+                <p>Heute: <span>${userData.daily}</span> – Gesamt: <span>${userData.total}</span></p>
+              </div>
+              <button onclick="clickUser('${user}', this)" class="relative z-10 bg-gradient-to-r from-pink-500 to-yellow-500 hover:from-pink-600 hover:to-yellow-600 text-white px-4 py-2 rounded-full shadow transition-all duration-300">+1</button>
+            `;
+            usersDiv.appendChild(div);
+          });
+        });
+    }
 
-      // User Liste rendern
-      const usersDiv = document.getElementById('users');
-      usersDiv.innerHTML = '';
-      users.forEach(user => {
-        const userData = data.users[user];
-        const div = document.createElement('div');
-        div.className = 'user';
-        div.innerHTML = `
-          <strong>${user}</strong> - Heute: ${userData.daily} - Gesamt: ${userData.total}
-          <button onclick="clickUser('${user}')">+1</button>
-        `;
-        usersDiv.appendChild(div);
-      });
-    });
-}
+    
     function clickUser(user, btn) {
       showPuff(btn);
       fetch('/click/' + user, { method: 'POST' }).then(() => render());
