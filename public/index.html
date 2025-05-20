@@ -7,22 +7,22 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .puff {
-      pointer-events: none;
-      animation: rise 3.0s ease-out forwards;
-      position: absolute;
-      font-size: 1.5rem;
-    }
+	  position: absolute;
+	  font-size: 1.5rem;
+	  animation: rise 2s ease-out forwards;
+	  pointer-events: none;
+	}
 
-    @keyframes rise {
-      0% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-      100% {
-        opacity: 0;
-        transform: translateY(-100px) scale(3);
-      }
-    }
+	@keyframes rise {
+	  0% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	  }
+	  100% {
+		opacity: 0;
+		transform: translateY(-100px) scale(3);
+	  }
+	}
 
     
     #king span:first-child {
@@ -65,24 +65,26 @@
       .then(res => res.json())
       .then(data => {
         document.getElementById('dailyTotal').textContent = data.dailyTotal;
-		
-		 // Kippen-König*in finden
-          let king = '';
-          let max = 0;
-          for (const user of users) {
-            if (data.users[user].daily > max) {
-              max = data.users[user].daily;
-              king = user;
-            }
-          }
-    
-          // Kippen-König*in anzeigen
-          const kingText = document.getElementById('king-text');
-          if (max > 0) {
-            kingText.textContent = `Kippen-König*in des Tages: ${king} (${max} Kippen)`;
-          } else {
-            kingText.textContent = 'Noch kein/e Kippen-König*in heute 😢';
-          }
+				  
+			let max = 0;
+			let king = [];
+			for (const user of users) {
+			  const count = data.users[user].daily;
+			  if (count > max) {
+				max = count;
+				king = [user];
+			  } else if (count === max && count > 0) {
+				king.push(user);
+			  }
+			}
+
+			// Kippen-König*in anzeigen
+			const kingText = document.getElementById('king-text');
+			if (max > 0) {
+			  kingText.textContent = `Kippen-König*in des Tages: ${king.join(', ')} (${max} Kippen)`;
+			} else {
+			  kingText.textContent = 'Noch kein/e Kippen-König*in heute 😢';
+			}
 
         const usersDiv = document.getElementById('users');
         usersDiv.innerHTML = '';
@@ -103,25 +105,35 @@
       });
   }
 
-  function clickUser(user, btn) {
-    showPuff(btn);
-    fetch('/click/' + user, { method: 'POST' }).then(() => render());
-  }
 
-  function showPuff(button) {
-    const puff = document.createElement('div');
-    puff.className = 'puff';
-    puff.textContent = '💨';
-    const offsetX = button.offsetWidth / 2;
-    const offsetY = -20;
+  
+	  function clickUser(user, btn) {
+		  showPuff(btn);
+		  fetch('/click/' + user, { method: 'POST' }).then(() => {
+			setTimeout(() => {
+			  render();
+			}, 2050); // warte dann aktualisiere
+		  });
+		}
 
-    puff.style.left = `${button.offsetLeft + offsetX}px`;
-    puff.style.top = `${button.offsetTop + offsetY}px`;
+	function showPuff(button) {
+	  const puff = document.createElement('div');
+	  puff.className = 'puff';
+	  puff.textContent = '💨';
 
-    button.parentElement.appendChild(puff);
-    setTimeout(() => puff.remove(), 800);
-  }
+	  const rect = button.getBoundingClientRect();
+	  const parentRect = button.parentElement.getBoundingClientRect();
 
+	  puff.style.left = (rect.left - parentRect.left + 13) + 'px';
+	  puff.style.top = (rect.top - parentRect.top - 20) + 'px';
+
+	  button.parentElement.appendChild(puff);
+
+	  // Entferne erst, wenn Animation fertig ist
+	  puff.addEventListener('animationend', () => {
+		puff.remove();
+	  });
+	}
   render();
 </script>
   
