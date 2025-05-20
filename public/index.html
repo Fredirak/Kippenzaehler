@@ -34,6 +34,8 @@
       <p class="text-xl">Insgesamt haben wir <span id="total" class="font-bold">0</span> Kippen geschafft!</p>
     </div>
 
+    <div id="king" style="font-weight:bold; margin-bottom: 1rem;"></div>
+    
     <div id="users" class="mt-8 grid gap-4 w-full max-w-xl"></div>
   </div>
 
@@ -46,6 +48,25 @@
         .then(data => {
           document.getElementById('dailyTotal').textContent = data.dailyTotal;
           document.getElementById('total').textContent = data.total;
+
+          // Kippen-König*in finden
+          let king = '';
+          let max = 0;
+          for (const user of users) {
+            if (data.users[user].daily > max) {
+              max = data.users[user].daily;
+              king = user;
+            }
+          }
+    
+          // Kippen-König*in anzeigen
+          const kingDiv = document.getElementById('king');
+          if (max > 0) {
+            kingDiv.textContent = `Kippen-König*in des Tages: ${king} (${max} Kippen)`;
+          } else {
+            kingDiv.textContent = 'Noch kein Kippen-König*in heute';
+          }
+
 
           const usersDiv = document.getElementById('users');
           usersDiv.innerHTML = '';
