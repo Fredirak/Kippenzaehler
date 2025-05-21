@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leaderboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans p-6">
+  <h1 class="text-3xl font-bold mb-6 text-center">🏆 Kippen-Leaderboard</h1>
+
+  <div class="mx-auto max-w-xl flex justify-center mb-6">
+    <button id="modeTotal" class="mr-2 w-full bg-gradient-to-r from-lime-400 to-green-600 hover:from-lime-500 hover:to-green-700 text-white px-4 py-2 rounded-xl shadow">Gesamt</button>
+    <button id="modeBest" class="ml-2 w-full bg-gradient-to-r from-lime-400 to-green-600 hover:from-lime-500 hover:to-green-700 text-white px-4 py-2 rounded-xl shadow">Tagesrekord</button>
+  </div>
+
+  <div id="leaderboard" class="max-w-xl mx-auto bg-white rounded-xl shadow p-6 space-y-4"></div>
+
+  <div class="text-center mt-6">
+    <button onclick="location.href='index.html'" class="bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-600 hover:to-violet-700 w-full max-w-xl text-white px-6 py-3 rounded-xl shadow">
+      Zurück zur Hauptseite
+    </button>
+  </div>
+
+  <script>
+    const users = ['Frieder', 'Gesine', 'Fredi', 'Lea', 'Emma'];
+
+    const leaderboardDiv = document.getElementById('leaderboard');
+    const btnTotal = document.getElementById('modeTotal');
+    const btnBest = document.getElementById('modeBest');
+
+    let mode = 'total'; // oder 'best'
+
+    function renderLeaderboard(data) {
+      leaderboardDiv.innerHTML = '';
+
+      let entries = users.map(user => {
+        const userData = data.users[user] || {};
+        const total = userData.total || 0;
+        let best = 0;
+
+        const history = data.history[user] || {};
+        for (const val of Object.values(history)) {
+          if (typeof val === 'number' && val > best) best = val;
+        }
+
+        // ggf. aktueller Tag noch berücksichtigen
+        const today = new Date().toISOString().split('T')[0];
+        const todayVal = userData.daily;
+        if (typeof todayVal === 'number' && todayVal > best) best = todayVal;
+
+        return {
+          name: user,
+          total,
+          best
+        };
+      });
+
+      entries.sort((a, b) => mode === 'total' ? b.total - a.total : b.best - a.best);
+
+      entries.forEach((entry, index) => {
+        leaderboardDiv.innerHTML += `
+          <div class="flex justify-between items-center border-b pb-2">
+            <span class="font-semibold">${index + 1}. ${entry.name}</span>
+            <span class="text-gray-600">
+              ${mode === 'total' ? `${entry.total} Kippen insgesamt` : `${entry.best} an einem Tag`}
+            </span>
+          </div>
+        `;
+      });
+    }
+
+    function fetchAndRender() {
+      fetch('/status?nocache=' + new Date().getTime())
+        .then(res => res.json())
+        .then(data => renderLeaderboard(data))
+        .catch(err => console.error('Fehler beim Laden der Daten:', err));
+    }
+
+    btnTotal.addEventListener('click', () => {
+      mode = 'total';
+      fetchAndRender();
+    });
+
+    btnBest.addEventListener('click', () => {
+      mode = 'best';
+      fetchAndRender();
+    });
+
+    fetchAndRender();
+  </script>
+</body>
+</html>
