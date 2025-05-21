@@ -19,138 +19,297 @@
     </button>
   </div>
 
-  <script>
-    const users = ['Frieder', 'Gesine', 'Fredi', 'Lea', 'Emma'];
+	 <script>
+		  const users = ['Frieder', 'Gesine', 'Fredi', 'Lea', 'Emma'];
+		  const userColors = {
+			Frieder: 'rgba(255, 99, 132, 1)',
+			Gesine: 'rgba(54, 162, 235, 1)',
+			Fredi: 'rgba(255, 206, 86, 1)',
+			Lea: 'rgba(75, 192, 192, 1)',
+			Emma: 'rgba(153, 102, 255, 1)'
+		  };
 
-    // Heute im ISO-Format YYYY-MM-DD
-    const today = new Date().toISOString().split('T')[0];
+		  const today = new Date().toISOString().split('T')[0];
+		  let globalChart, userChart;
+		  let currentUser = users[0];
+		  let currentFilter = 'gesamt'; // 'gesamt' | '30' | '7'
 
-    fetch('/status?nocache=' + new Date().getTime())  // Cache-Busting
-      .then(res => res.json())
-      .then(data => {
-        const container = document.getElementById('charts');
+		  function formatDate(dateStr) {
+			const d = new Date(dateStr);
+			return d.toLocaleDateString('de-DE');
+		  }
 
-        // Gesamtentwicklung vorbereiten
-        const dateMap = {}; // { date: totalKippen }
+		  // Hilfsfunktion, um Datumsstrings zu vergleichen und nur Daten im Zeitraum zurückzugeben
+		  function filterDates(dates, filter) {
+			if (filter === 'gesamt') return dates;
 
-        users.forEach(user => {
-          const history = data.history[user] || {};
+			const daysBack = filter === '7' ? 7 : 30;
+			const todayDate = new Date(today);
+			return dates.filter(dateStr => {
+			  const d = new Date(dateStr);
+			  const diffDays = (todayDate - d) / (1000 * 60 * 60 * 24);
+			  return diffDays >= 0 && diffDays < daysBack;
+			});
+		  }
 
-          // Alte Daten sammeln
-          for (const [date, value] of Object.entries(history)) {
-            if (!dateMap[date]) dateMap[date] = 0;
-            dateMap[date] += value;
-          }
+		  // Buttons für Filter erstellen
+		  function createFilterButtons(container, onChange) {
+			const filters = [
+			  { id: '7', label: 'Letzte Woche' },
+			  { id: '30', label: 'Letzte 30 Tage' },
+			  { id: 'gesamt', label: 'Gesamt' }
+			];
+			const btnContainer = document.createElement('div');
+			btnContainer.className = 'flex justify-center gap-4 mt-4';
 
-          // Heute ergänzen, falls nicht schon in history enthalten
-          if (!history.hasOwnProperty(today)) {
-            const todayVal = data.users[user]?.dailyData?.[today] ?? data.users[user]?.daily ?? 0;
-            if (typeof todayVal === 'number') {
-              if (!dateMap[today]) dateMap[today] = 0;
-              dateMap[today] += todayVal;
-            }
-          }
-        });
+			filters.forEach(f => {
+			  const btn = document.createElement('button');
+			  btn.textContent = f.label;
+			  btn.className = `px-4 py-2 rounded-xl font-semibold shadow transition ${
+				f.id === currentFilter
+				  ? 'bg-blue-600 text-white hover:bg-blue-700'
+				  : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+			  }`;
+			  btn.onclick = () => {
+				if (currentFilter !== f.id) {
+				  currentFilter = f.id;
+				  onChange(currentFilter);
+				  // Buttons neu rendern, damit aktive Optik stimmt
+				  Array.from(btnContainer.children).forEach(b => {
+					b.className = b.textContent === f.label
+					  ? 'px-4 py-2 rounded-xl font-semibold shadow transition bg-blue-600 text-white hover:bg-blue-700'
+					  : 'px-4 py-2 rounded-xl font-semibold shadow transition bg-gray-300 text-gray-700 hover:bg-gray-400';
+				  });
+				}
+			  };
+			  btnContainer.appendChild(btn);
+			});
 
-        // Sortiere die Daten chronologisch
-        const allDates = Object.keys(dateMap).sort();
-        const allValues = allDates.map(date => dateMap[date]);
-        const totalOverall = allValues.reduce((a, b) => a + b, 0);
+			container.appendChild(btnContainer);
+		  }
 
-        // 📊 Alle zusammen
-        const globalCanvas = document.createElement('canvas');
-        const globalSection = document.createElement('div');
-        globalSection.className = 'bg-white p-6 rounded-xl shadow mb-12';
-        globalSection.innerHTML = `
-          <h2 class="text-2xl font-bold mb-2">Alle zusammen</h2>
-          <p class="mb-4 text-gray-600">Gesamt: <span class="font-bold">${totalOverall}</span> Kippen</p>
-        `;
-        globalSection.appendChild(globalCanvas);
-        container.appendChild(globalSection);
+		  fetch('/status?nocache=' + new Date().getTime())
+			.then(res => res.json())
+			.then(data => {
+			  const container = document.getElementById('charts');
+			  container.innerHTML = '';
 
-        new Chart(globalCanvas, {
-          type: 'line',
-          data: {
-            labels: allDates,
-            datasets: [{
-              label: 'Kippen pro Tag (gesamt)',
-              data: allValues,
-              borderColor: 'rgba(59, 130, 246, 1)',
-              backgroundColor: 'rgba(59, 130, 246, 0.2)',
-              tension: 0.2,
-              fill: true,
-              pointRadius: 4,
-            }]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              y: {
-                beginAtZero: true,
-                ticks: { stepSize: 1 }
-              }
-            }
-          }
-        });
+			  // --- Gesamt Graph vorbereiten ---
+			  const dateMap = {}; // { date: totalKippen }
 
-        // 🔁 Einzelne User:innen
-        users.forEach(user => {
-          const history = data.history[user] || {};
+			  users.forEach(user => {
+				const history = data.history[user] || {};
+				for (const [date, value] of Object.entries(history)) {
+				  if (!dateMap[date]) dateMap[date] = 0;
+				  dateMap[date] += value;
+				}
+				// Heute ergänzen
+				if (!history.hasOwnProperty(today)) {
+				  const todayVal = data.users[user]?.dailyData?.[today] ?? data.users[user]?.daily ?? 0;
+				  if (typeof todayVal === 'number') {
+					if (!dateMap[today]) dateMap[today] = 0;
+					dateMap[today] += todayVal;
+				  }
+				}
+			  });
 
-          const combinedHistory = { ...history };
+			  const allDates = Object.keys(dateMap).sort();
 
-          // Heute ergänzen, falls nicht schon in history enthalten
-          if (!combinedHistory.hasOwnProperty(today)) {
-            const todayVal = data.users[user]?.dailyData?.[today] ?? data.users[user]?.daily ?? 0;
-            if (typeof todayVal === 'number') {
-              combinedHistory[today] = todayVal;
-            }
-          }
+			  // Container für globalen Chart
+			  const globalSection = document.createElement('div');
+			  globalSection.className = 'bg-white p-6 rounded-xl shadow mb-12 max-w-4xl mx-auto';
+			  globalSection.innerHTML = `
+				<h2 class="text-2xl font-bold mb-2">Alle zusammen</h2>
+				<p class="mb-4 text-gray-600" id="global-total">Gesamt: <span class="font-bold">0</span> Kippen</p>
+			  `;
+			  const globalCanvas = document.createElement('canvas');
+			  globalSection.appendChild(globalCanvas);
+			  container.appendChild(globalSection);
 
-          const dates = Object.keys(combinedHistory).sort();
-          const values = dates.map(date => combinedHistory[date]);
+			  // Filter Buttons für globalen Chart
+			  createFilterButtons(globalSection, updateGlobalChart);
 
-          const totalUser = values.reduce((a, b) => a + b, 0);
+			  function updateGlobalChart() {
+				// Gefilterte Daten
+				const filteredDates = filterDates(allDates, currentFilter);
+				const filteredValues = filteredDates.map(date => dateMap[date] || 0);
+				const totalOverall = filteredValues.reduce((a, b) => a + b, 0);
 
-          const canvas = document.createElement('canvas');
-          const section = document.createElement('div');
-          section.className = 'bg-white p-6 rounded-xl shadow';
-          section.innerHTML = `
-            <h2 class="text-xl font-semibold mb-2">${user}</h2>
-            <p class="mb-4 text-gray-600">Gesamt: <span class="font-bold">${totalUser}</span> Kippen</p>
-          `;
-          section.appendChild(canvas);
-          container.appendChild(section);
+				document.getElementById('global-total').innerHTML =
+				  `Gesamt: <span class="font-bold">${totalOverall}</span> Kippen`;
 
-          new Chart(canvas, {
-            type: 'line',
-            data: {
-              labels: dates,
-              datasets: [{
-                label: 'Kippen pro Tag',
-                data: values,
-                borderColor: 'rgba(255, 99, 132, 1)',
-                backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                tension: 0.2,
-                fill: true,
-                pointRadius: 4,
-              }]
-            },
-            options: {
-              responsive: true,
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  ticks: { stepSize: 1 }
-                }
-              }
-            }
-          });
-        });
-      })
-      .catch(err => {
-        console.error('Fehler beim Laden der Daten:', err);
-      });
-  </script>
+				if (globalChart) globalChart.destroy();
+
+				globalChart = new Chart(globalCanvas, {
+				  type: 'line',
+				  data: {
+					labels: filteredDates,
+					datasets: [{
+					  label: 'Kippen pro Tag (gesamt)',
+					  data: filteredValues,
+					  borderColor: 'rgba(59, 130, 246, 1)',
+					  backgroundColor: 'rgba(59, 130, 246, 0.2)',
+					  tension: 0.2,
+					  fill: true,
+					  pointRadius: 4,
+					}]
+				  },
+				  options: {
+					responsive: true,
+					plugins: {
+					  tooltip: {
+						callbacks: {
+						  title: ctx => formatDate(ctx[0].label),
+						  label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + ' Kippen'
+						}
+					  }
+					},
+					scales: {
+					  y: {
+						beginAtZero: true,
+						ticks: { stepSize: 1 }
+					  }
+					}
+				  }
+				});
+			  }
+
+			  // --- User Chart Container ---
+			  const userSection = document.createElement('div');
+			  userSection.className = 'bg-white p-6 rounded-xl shadow max-w-4xl mx-auto';
+
+			  // Buttons Container (flex, volle Breite)
+			  const btnContainer = document.createElement('div');
+			  btnContainer.className = 'mb-4 flex w-full';
+
+			  users.forEach(user => {
+				const btn = document.createElement('button');
+				btn.textContent = user;
+				btn.className = 'flex-1 mx-1 py-2 rounded-xl shadow text-white font-semibold transition outline-none';
+
+				const baseColor = userColors[user];
+				const gradient = `linear-gradient(135deg, ${baseColor.replace('1)', '0.7)')} 0%, ${baseColor} 100%)`;
+
+				btn.style.background = gradient;
+				btn.style.border = 'none';
+
+				function setActiveStyle(active) {
+				  if (active) {
+					btn.style.boxShadow = `0 0 0 3px ${baseColor}`;
+					btn.style.background = `linear-gradient(135deg, ${baseColor.replace('1)', '0.9)')} 0%, ${baseColor} 100%)`;
+				  } else {
+					btn.style.boxShadow = 'none';
+					btn.style.background = gradient;
+				  }
+				}
+
+				setActiveStyle(user === currentUser);
+
+				btn.onmouseenter = () => {
+				  if (user !== currentUser) {
+					btn.style.background = `linear-gradient(135deg, ${baseColor.replace('1)', '0.9)')} 0%, ${baseColor} 100%)`;
+				  }
+				};
+				btn.onmouseleave = () => {
+				  if (user !== currentUser) {
+					btn.style.background = gradient;
+				  }
+				};
+
+				btn.onclick = () => {
+				  if (user !== currentUser) {
+					Array.from(btnContainer.children).forEach(b => {
+					  const u = b.textContent;
+					  b.style.boxShadow = 'none';
+					  b.style.background = `linear-gradient(135deg, ${userColors[u].replace('1)', '0.7)')} 0%, ${userColors[u]} 100%)`;
+					});
+
+					currentUser = user;
+					updateUserChart();
+
+					setActiveStyle(true);
+				  }
+				};
+
+				btnContainer.appendChild(btn);
+			  });
+
+			  const userCanvas = document.createElement('canvas');
+			  userSection.appendChild(btnContainer);
+			  userSection.appendChild(userCanvas);
+			  container.appendChild(userSection);
+
+			  // Filter Buttons für User Chart
+			  createFilterButtons(userSection, updateUserChart);
+
+			  function updateUserChart() {
+				const history = data.history[currentUser] || {};
+
+				const combinedHistory = { ...history };
+				if (!combinedHistory.hasOwnProperty(today)) {
+				  const todayVal = data.users[currentUser]?.dailyData?.[today] ?? data.users[currentUser]?.daily ?? 0;
+				  if (typeof todayVal === 'number') {
+					combinedHistory[today] = todayVal;
+				  }
+				}
+
+				let dates = Object.keys(combinedHistory).sort();
+				dates = filterDates(dates, currentFilter);
+				const values = dates.map(date => combinedHistory[date]);
+
+				const totalUser = values.reduce((a, b) => a + b, 0);
+
+				if (userChart) userChart.destroy();
+
+				userSection.querySelector('p')?.remove();
+				const info = document.createElement('p');
+				info.className = 'mb-4 text-gray-600';
+				info.innerHTML = `Gesamt: <span class="font-bold">${totalUser}</span> Kippen`;
+				userSection.insertBefore(info, btnContainer.nextSibling);
+
+				userChart = new Chart(userCanvas, {
+				  type: 'line',
+				  data: {
+					labels: dates,
+					datasets: [{
+					  label: 'Kippen pro Tag',
+					  data: values,
+					  borderColor: userColors[currentUser],
+					  backgroundColor: userColors[currentUser].replace('1)', '0.2)'),
+					  tension: 0.2,
+					  fill: true,
+					  pointRadius: 4,
+					}]
+				  },
+				  options: {
+					responsive: true,
+					plugins: {
+					  tooltip: {
+						callbacks: {
+						  title: ctx => formatDate(ctx[0].label),
+						  label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + ' Kippen'
+						}
+					  }
+					},
+					scales: {
+					  y: {
+						beginAtZero: true,
+						ticks: { stepSize: 1 }
+					  }
+					}
+				  }
+				});
+			  }
+
+			  // Initiale Anzeige
+			  updateGlobalChart();
+			  updateUserChart();
+			})
+			.catch(err => {
+			  console.error('Fehler beim Laden der Daten:', err);
+			});
+		</script>
+
+
 </body>
 </html>
