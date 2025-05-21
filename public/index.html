@@ -5,35 +5,65 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kippen-Counter</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <style>
     .puff {
-	  position: absolute;
-	  font-size: 1.5rem;
-	  animation: rise 2s ease-out forwards;
-	  pointer-events: none;
-	}
+      position: absolute;
+      font-size: 1.5rem;
+      animation: rise 2s ease-out forwards;
+      pointer-events: none;
+    }
 
-	@keyframes rise {
-	  0% {
-		opacity: 1;
-		transform: translateY(0) scale(1);
-	  }
-	  100% {
-		opacity: 0;
-		transform: translateY(-100px) scale(3);
-	  }
-	}
+    @keyframes rise {
+      0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-100px) scale(3);
+      }
+    }
 
-    
     #king span:first-child {
       margin-right: 0.75rem;
       animation: pulse 2s ease-in-out infinite alternate;
     }
-    
+
     @keyframes pulse {
       0% { opacity: 0.6; }
       100% { opacity: 1; }
     }
+
+    .glitter-text {
+	  background: linear-gradient(90deg, #facc15, #eab308, #facc15); /* sattes Goldgelb */
+	  background-size: 200% auto;
+	  color: transparent;
+	  background-clip: text;
+	  -webkit-background-clip: text;
+	  animation: glitter 2s linear infinite;
+	}
+
+    @keyframes glitter {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+	
+	@keyframes popText {
+	  0%, 100% {
+		transform: scale(1);
+	  }
+	  50% {
+		transform: scale(1.1);
+	  }
+	}
+
+	.personal-best {
+	  font-weight: bold;
+	  color: #facc15; /* Goldgelb */
+	  animation: popText 1.5s ease-in-out infinite;
+	}
+	
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans">
@@ -48,101 +78,114 @@
       <span class="mr-3 animate-pulse text-2xl">👑</span>
       <span id="king-text">Noch kein/e Kippen-König*in heute 😢</span>
     </div>
-    
+
     <div id="users" class="mt-8 grid gap-4 w-full max-w-xl"></div>
-	
-	
-	<button onclick="location.href='leaderboard.html'" 
-	  class="mt-4 bg-gradient-to-r from-lime-400 to-green-600 hover:from-lime-500 hover:to-green-700 text-white px-6 py-3 rounded-xl shadow w-full max-w-xl text-xl">
-	  🏆 Leaderboard
-	</button>
-	
-	<button onclick="location.href='statistik.html'" 
-			class="mt-4 bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-600 hover:to-violet-700 text-white px-6 py-3 rounded-xl shadow w-full max-w-xl text-xl">
-	  📊 Statistik
-	</button>
-	
-  
+
+    <button onclick="location.href='leaderboard.html'" 
+      class="mt-4 bg-gradient-to-r from-lime-400 to-green-600 hover:from-lime-500 hover:to-green-700 text-white px-6 py-3 rounded-xl shadow w-full max-w-xl text-xl">
+      🏆 Leaderboard
+    </button>
+
+    <button onclick="location.href='statistik.html'" 
+      class="mt-4 bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-600 hover:to-violet-700 text-white px-6 py-3 rounded-xl shadow w-full max-w-xl text-xl">
+      📊 Statistik
+    </button>
+  </div>
+
   <script>
-  const users = ['Frieder', 'Gesine', 'Fredi', 'Lea', 'Emma'];
+    const users = ['Frieder', 'Gesine', 'Fredi', 'Lea', 'Emma'];
+    let triggeredConfetti = new Set();
 
-  function render() {
-    fetch('/status')
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById('dailyTotal').textContent = data.dailyTotal;
-				  
-			let max = 0;
-			let king = [];
-			for (const user of users) {
-			  const count = data.users[user].daily;
-			  if (count > max) {
-				max = count;
-				king = [user];
-			  } else if (count === max && count > 0) {
-				king.push(user);
-			  }
-			}
+    function render() {
+      fetch('/status')
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('dailyTotal').textContent = data.dailyTotal;
 
-			// Kippen-König*in anzeigen
-			const kingText = document.getElementById('king-text');
-			if (max > 0) {
-			  kingText.textContent = `Kippen-König*in des Tages: ${king.join(', ')} (${max} Kippen)`;
-			} else {
-			  kingText.textContent = 'Noch kein/e Kippen-König*in heute 😢';
-			}
+          let max = 0;
+          let king = [];
+          for (const user of users) {
+            const count = data.users[user].daily;
+            if (count > max) {
+              max = count;
+              king = [user];
+            } else if (count === max && count > 0) {
+              king.push(user);
+            }
+          }
 
-        const usersDiv = document.getElementById('users');
-        usersDiv.innerHTML = '';
-        users.forEach(user => {
-          const userData = data.users[user];
-          const div = document.createElement('div');
-          div.className = 'bg-white rounded-xl shadow-md p-4 flex justify-between items-center relative';
+          const kingText = document.getElementById('king-text');
+          if (max > 0) {
+            kingText.textContent = `Kippen-König*in des Tages: ${king.join(', ')} (${max} Kippen)`;
+          } else {
+            kingText.textContent = 'Noch kein/e Kippen-König*in heute 😢';
+          }
 
-          div.innerHTML = `
-            <div>
-              <h2 class="text-lg font-semibold">${user}</h2>
-              <p>Heute: <span>${userData.daily}</span></p>
-            </div>
-            <button onclick="clickUser('${user}', this)" class="relative z-10 bg-gradient-to-r from-pink-500 to-yellow-500 hover:from-pink-600 hover:to-yellow-600 text-white px-4 py-2 rounded-full shadow transition-all duration-300">+1</button>
-          `;
-          usersDiv.appendChild(div);
+          const usersDiv = document.getElementById('users');
+          usersDiv.innerHTML = '';
+          users.forEach(user => {
+            const userData = data.users[user];
+            const history = data.history?.[user] || {};
+            const previousMax = Math.max(...Object.values(history), 0);
+            const isNewRecord = userData.daily > previousMax;
+
+            // Konfetti bei neuem Rekord nur einmal pro Person auslösen
+            if (isNewRecord && !triggeredConfetti.has(user)) {
+              triggeredConfetti.add(user);
+              confetti({
+                particleCount: 100,
+                spread: 80,
+                origin: { y: 0.6 },
+                colors: ['#FFD700', '#FFFACD', '#FFA500'],
+              });
+            }
+
+            const div = document.createElement('div');
+            div.className = 'bg-white rounded-xl shadow-md p-4 flex justify-between items-center relative';
+
+            div.innerHTML = `
+              <div>
+                <h2 class="text-lg font-semibold ${isNewRecord ? '' : ''}">
+                  ${user} ${isNewRecord ? '' : ''}
+                </h2>
+                <p>Heute: <span>${userData.daily}</span></p>
+                ${isNewRecord ? '<p class="text-sm text-yellow-500 font-bold personal-best glitter-text">New personal best!</p>' : ''}
+              </div>
+              <button onclick="clickUser('${user}', this)" class="relative z-10 bg-gradient-to-r from-pink-500 to-yellow-500 hover:from-pink-600 hover:to-yellow-600 text-white px-4 py-2 rounded-full shadow transition-all duration-300">+1</button>
+            `;
+            usersDiv.appendChild(div);
+          });
         });
+    }
+
+    function clickUser(user, btn) {
+      showPuff(btn);
+      fetch('/click/' + user, { method: 'POST' }).then(() => {
+        setTimeout(() => {
+          render();
+        }, 1000);
       });
-  }
+    }
 
+    function showPuff(button) {
+      const puff = document.createElement('div');
+      puff.className = 'puff';
+      puff.textContent = '💨';
 
-  
-	  function clickUser(user, btn) {
-		  showPuff(btn);
-		  fetch('/click/' + user, { method: 'POST' }).then(() => {
-			setTimeout(() => {
-			  render();
-			}, 2050); // warte dann aktualisiere
-		  });
-		}
+      const rect = button.getBoundingClientRect();
+      const parentRect = button.parentElement.getBoundingClientRect();
 
-	function showPuff(button) {
-	  const puff = document.createElement('div');
-	  puff.className = 'puff';
-	  puff.textContent = '💨';
+      puff.style.left = (rect.left - parentRect.left + 13) + 'px';
+      puff.style.top = (rect.top - parentRect.top - 20) + 'px';
 
-	  const rect = button.getBoundingClientRect();
-	  const parentRect = button.parentElement.getBoundingClientRect();
+      button.parentElement.appendChild(puff);
 
-	  puff.style.left = (rect.left - parentRect.left + 13) + 'px';
-	  puff.style.top = (rect.top - parentRect.top - 20) + 'px';
+      puff.addEventListener('animationend', () => {
+        puff.remove();
+      });
+    }
 
-	  button.parentElement.appendChild(puff);
-
-	  // Entferne erst, wenn Animation fertig ist
-	  puff.addEventListener('animationend', () => {
-		puff.remove();
-	  });
-	}
-  render();
-</script>
-  
-  
+    render();
+  </script>
 </body>
 </html>
