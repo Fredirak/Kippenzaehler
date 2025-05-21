@@ -9,9 +9,13 @@
 <body class="bg-gray-100 text-gray-800 font-sans p-6">
   <h1 class="text-3xl font-bold mb-6 text-center">🏆 Kippen-Leaderboard</h1>
 
-  <div class="mx-auto max-w-xl flex justify-center mb-6">
-    <button id="modeTotal" class="mr-2 w-full bg-gradient-to-r from-lime-400 to-green-600 hover:from-lime-500 hover:to-green-700 text-white px-4 py-2 rounded-xl shadow">Gesamt</button>
-    <button id="modeBest" class="ml-2 w-full bg-gradient-to-r from-lime-400 to-green-600 hover:from-lime-500 hover:to-green-700 text-white px-4 py-2 rounded-xl shadow">Tagesrekord</button>
+  <div class="mx-auto max-w-xl flex justify-center mb-6 gap-4">
+    <button id="modeTotal" class="w-full bg-gradient-to-r from-lime-400 to-green-600 hover:from-lime-500 hover:to-green-700 text-white px-4 py-2 rounded-xl shadow">
+      Gesamt
+    </button>
+    <button id="modeBest" class="w-full bg-gradient-to-r from-lime-400 to-green-600 hover:from-lime-500 hover:to-green-700 text-white px-4 py-2 rounded-xl shadow">
+      Tagesrekord
+    </button>
   </div>
 
   <div id="leaderboard" class="max-w-xl mx-auto bg-white rounded-xl shadow p-6 space-y-4"></div>
@@ -24,44 +28,54 @@
 
   <script>
     const users = ['Frieder', 'Gesine', 'Fredi', 'Lea', 'Emma'];
-
     const leaderboardDiv = document.getElementById('leaderboard');
     const btnTotal = document.getElementById('modeTotal');
     const btnBest = document.getElementById('modeBest');
 
-    let mode = 'total'; // oder 'best'
+    let mode = 'total'; // 'total' oder 'best'
+
+    function updateButtonStyles() {
+	  const activeClasses = ['ring-2', 'ring-offset-2', 'ring-green-600'];
+	  const allButtons = [btnTotal, btnBest];
+
+	  allButtons.forEach(btn => btn.classList.remove(...activeClasses));
+
+	  const activeBtn = mode === 'total' ? btnTotal : btnBest;
+	  activeBtn.classList.add(...activeClasses);
+	}
 
     function renderLeaderboard(data) {
       leaderboardDiv.innerHTML = '';
+      const today = new Date().toISOString().split('T')[0];
 
-      let entries = users.map(user => {
-        const userData = data.users[user] || {};
-        const total = userData.total || 0;
+      const entries = users.map(user => {
+        const userData = data.users?.[user] ?? { total: 0, daily: 0 };
+        const history = data.history?.[user] ?? {};
         let best = 0;
 
-        const history = data.history[user] || {};
         for (const val of Object.values(history)) {
           if (typeof val === 'number' && val > best) best = val;
         }
 
-        // ggf. aktueller Tag noch berücksichtigen
-        const today = new Date().toISOString().split('T')[0];
         const todayVal = userData.daily;
         if (typeof todayVal === 'number' && todayVal > best) best = todayVal;
 
         return {
           name: user,
-          total,
+          total: userData.total ?? 0,
           best
         };
       });
 
       entries.sort((a, b) => mode === 'total' ? b.total - a.total : b.best - a.best);
 
+      const medals = ['🥇', '🥈', '🥉'];
+
       entries.forEach((entry, index) => {
+        const emoji = medals[index] ?? `${index + 1}.`;
         leaderboardDiv.innerHTML += `
           <div class="flex justify-between items-center border-b pb-2">
-            <span class="font-semibold">${index + 1}. ${entry.name}</span>
+            <span class="font-semibold">${emoji} ${entry.name}</span>
             <span class="text-gray-600">
               ${mode === 'total' ? `${entry.total} Kippen insgesamt` : `${entry.best} an einem Tag`}
             </span>
@@ -73,8 +87,14 @@
     function fetchAndRender() {
       fetch('/status?nocache=' + new Date().getTime())
         .then(res => res.json())
-        .then(data => renderLeaderboard(data))
-        .catch(err => console.error('Fehler beim Laden der Daten:', err));
+        .then(data => {
+          renderLeaderboard(data);
+          updateButtonStyles();
+        })
+        .catch(err => {
+          console.error('Fehler beim Laden der Daten:', err);
+          leaderboardDiv.innerHTML = '<p class="text-red-600 text-center">Fehler beim Laden der Daten.</p>';
+        });
     }
 
     btnTotal.addEventListener('click', () => {
